@@ -216,7 +216,7 @@ body[data-script="lat"] .ar,body[data-script="lat"] .st-ar,body[data-script="lat
       </div>
       <div class="talk da">
         <button class="star da" id="talkDa" aria-label="Hablar en darija"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg></button>
-        <div class="talk-label"><b lang="ar">تكلّم بالدارجة</b><small id="lblDa">habla ella</small></div>
+        <div class="talk-label"><b lang="ar">تكلّم بالدارجة</b><small id="lblDa">habla la otra persona</small></div>
       </div>
     </div>
   </section>
@@ -231,7 +231,7 @@ body[data-script="lat"] .ar,body[data-script="lat"] .st-ar,body[data-script="lat
     </div>
     <div class="live-ctrl">
       <button class="btn primary" id="liveBtn"><span class="dot" id="liveDot"></span> Empezar</button>
-      <button class="btn green" id="liveStudent">Responde ella</button>
+      <button class="btn green" id="liveStudent">Responde la otra persona</button>
       <label class="switch"><input type="checkbox" id="liveVoice"> Leer en darija</label>
       <span class="sep"></span>
       <button class="btn" id="fontDown" aria-label="Letra más pequeña">A−</button>
@@ -261,7 +261,7 @@ body[data-script="lat"] .ar,body[data-script="lat"] .st-ar,body[data-script="lat
   <div class="big-body" id="bigBody"></div>
   <div class="big-acts">
     <button class="btn" id="bigPlay">Escuchar</button>
-    <button class="btn" id="bigRot">Girar hacia ella</button>
+    <button class="btn" id="bigRot">Girar hacia la otra persona</button>
     <button class="btn" id="bigClose">Cerrar</button>
   </div>
 </div>
@@ -398,7 +398,7 @@ const groqReady = () => !!S.groqKey;
 async function groq(system, user) {
   if (!groqReady()) throw Object.assign(new Error('Falta la clave de Groq en Ajustes.'), {status:400});
   const call = async json => {
-    const body = {model:S.groqModel || DEF.groqModel, messages:[{role:'system', content:system}, {role:'user', content:user}], temperature:0.2, max_tokens:600};
+    const body = {model:S.groqModel || DEF.groqModel, messages:[{role:'system', content:system}, {role:'user', content:user}], temperature:0.2, max_tokens:1500};
     if (json) body.response_format = {type:'json_object'};
     const r = await fetchT('https://api.groq.com/openai/v1/chat/completions', {method:'POST',
       headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + S.groqKey}, body:JSON.stringify(body)}, 12000, 'Groq');
@@ -484,9 +484,16 @@ async function translate(text, dir) {
   if (dir === 'es2da') p = `Texto en español para traducir a darija:\n"""${text}"""\n"spanish" = el texto original; "arabic" = la traducción en darija.`;
   else if (dir === 'da2es') p = `Texto en darija (puede estar en alfabeto árabe, en latino o arabizi, o mezclado con francés) para traducir al español:\n"""${text}"""\n"arabic" = el original en alfabeto árabe; "spanish" = la traducción.`;
   else p = `Detecta si este texto está en español o en darija (en alfabeto árabe, en latino o arabizi, o mezclado con francés) y tradúcelo al otro idioma:\n"""${text}"""\n"spanish" y "arabic" deben contener siempre la versión en cada idioma.`;
-  const {raw, engine} = await llm(SYS(), p);
+  let {raw, engine} = await llm(SYS(), p);
   let parsed;
-  try { parsed = parseJSON(raw); } catch(e) { throw new Error('La traducción ha llegado incompleta. Repite la frase.'); }
+  try { parsed = parseJSON(raw); }
+  catch(e) {
+    // Reintento silencioso: a veces la respuesta llega cortada/incompleta.
+    try {
+      ({raw, engine} = await llm(SYS(), p));
+      parsed = parseJSON(raw);
+    } catch(e2) { throw new Error('La traducción ha llegado incompleta. Repite la frase.'); }
+  }
   const o = norm(parsed, dir === 'es2da' ? 'es' : dir === 'da2es' ? 'darija' : null);
   o.engine = engine;
   memCache.set(key, o);
@@ -694,7 +701,7 @@ function addMsg(from) {
 }
 function fillMsg(el, r) {
   const secs = el.dataset.t0 ? ((performance.now() - el.dataset.t0) / 1000).toFixed(1).replace('.', ',') + ' s' : '';
-  const who = (r.from === 'es' ? 'Tú' : 'Ella') + ` (${r.engine || 'Gemini'}${secs ? ', ' + secs : ''})`;
+  const who = (r.from === 'es' ? 'Tú' : 'La otra persona') + ` (${r.engine || 'Gemini'}${secs ? ', ' + secs : ''})`;
   if (r.from === 'es') {
     el.innerHTML = `<p class="who">${who}</p><p class="orig">${esc(r.es)}</p>
       <p class="ar" lang="ar" dir="rtl">${esc(r.ar)}</p>${r.latin ? `<p class="lat">${esc(r.latin)}</p>` : ''}
@@ -854,7 +861,7 @@ $('#liveStudent').onclick = async () => {
     if (r && (r.ar || r.es)) { setStage(r, true); liveLogAdd(r, true); if (S.auto) speak(r.es, 'es'); }
     else toast('No se ha entendido la respuesta.', 'err');
   } catch(e) { if (!e.silent) { e.message ? toast(e.message, 'err') : micError(e); } }
-  live.student = false; b.textContent = 'Responde ella'; b.classList.remove('warn');
+  live.student = false; b.textContent = 'Responde la otra persona'; b.classList.remove('warn');
   stInt.textContent = live.on ? 'Te escucho…' : '';
   startLiveRec();
 };
@@ -949,7 +956,7 @@ function openBig(r) {
     ? `<p class="big-es">${esc(r.es)}</p><p class="big-ar" lang="ar" dir="rtl">${esc(r.ar)}</p>${r.latin ? `<p class="big-lat">${esc(r.latin)}</p>` : ''}`
     : `<p class="big-es" lang="ar" dir="rtl">${esc(r.ar)}</p><p class="big-es main">${esc(r.es)}</p>`;
   $('#big').classList.remove('rot');
-  $('#bigRot').textContent = r.from === 'es' ? 'Girar hacia ella' : 'Girar hacia mí';
+  $('#bigRot').textContent = r.from === 'es' ? 'Girar hacia la otra persona' : 'Girar hacia mí';
   $('#big').hidden = false; $('#bigClose').focus();
 }
 $('#bigPlay').onclick = () => bigItem && (bigItem.from === 'es' ? speak(bigItem.ar, 'ar') : speak(bigItem.es, 'es'));
@@ -979,7 +986,7 @@ function syncSettingsUI() {
 function applySettings() {
   document.body.dataset.script = S.script;
   document.documentElement.style.setProperty('--live-scale', S.liveScale);
-  $('#lblDa').textContent = 'habla ella';
+  $('#lblDa').textContent = 'habla la otra persona';
 }
 function openSettings() { syncSettingsUI(); $('#settings').hidden = false; $('#sKey').focus(); }
 function closeSettings() { $('#settings').hidden = true; }
