@@ -287,6 +287,9 @@ body[data-script="lat"] .ar,body[data-script="lat"] .st-ar,body[data-script="lat
       <button class="btn primary" id="sTest">Comprobar que funciona</button>
       <button class="btn" id="sBackup">Ver copia de mis claves</button>
     </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="sHelp" style="width:100%">📋 Cómo conseguir mis claves (paso a paso)</button>
+    </div>
 
     <p class="privacy">El texto y el audio se envían a Google (Gemini) para traducir. Evita compartir datos personales sensibles mientras traduces.</p>
 
@@ -994,6 +997,27 @@ $('#sBackup').onclick = () => {
      <textarea readonly style="width:100%;min-height:120px;font-family:monospace;font-size:.85rem;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--papel);color:var(--ink)" onclick="this.select()">${esc(text)}</textarea>`,
     [{label:'Cerrar', primary:true}]);
   setTimeout(() => { const ta = document.querySelector('#modalRoot textarea'); if (ta) { ta.focus(); ta.select(); } }, 50);
+};
+$('#sHelp').onclick = () => {
+  modal('Cómo conseguir tus claves',
+    `<p>Necesitas dos claves gratuitas. Se piden una sola vez: cópialas y pégalas en los dos huecos de arriba.</p>
+     <p><b>1. Clave de Gemini (Google)</b></p>
+     <ol style="margin:0 0 10px 18px;padding:0">
+       <li>Entra en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> con una cuenta de Google.</li>
+       <li>Pulsa «Create API key» (Crear clave de API).</li>
+       <li>Copia la clave que aparece (empieza por «AQ.» o «AIza»).</li>
+       <li>Pégala en el campo «Clave de Gemini» de esta app.</li>
+     </ol>
+     <p><b>2. Clave de Groq</b></p>
+     <ol style="margin:0 0 10px 18px;padding:0">
+       <li>Entra en <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> y crea una cuenta (puede ser con Google).</li>
+       <li>Pulsa «Create API Key», ponle un nombre cualquiera y crea la clave.</li>
+       <li>Copia la clave (empieza por «gsk_»). Solo se muestra una vez.</li>
+       <li>Pégala en el campo «Clave de Groq» de esta app.</li>
+     </ol>
+     <p>Las dos son gratuitas y no piden tarjeta de crédito. Después pulsa «Comprobar que funciona» para verificarlo.</p>
+     <p>Guarda una copia de tus claves (botón «Ver copia de mis claves») por si algún día usas la app en otro teléfono.</p>`,
+    [{label:'Entendido', primary:true}]);
 };
 $('#sKey').oninput = e => { S.apiKey = e.target.value.trim(); saveS(); };
 $('#sGroqKey').oninput = e => { S.groqKey = e.target.value.trim(); saveS(); };
